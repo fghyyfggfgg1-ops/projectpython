@@ -5,3 +5,4 @@ qrcode
 Pillow
 scikit-learn
 pandas
+xlsxwriter
