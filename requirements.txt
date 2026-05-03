@@ -1,2 +1,3 @@
 streamlit
 PYMuPDF
+PYthon-docx
