@@ -3,3 +3,5 @@ PYMuPDF
 PYthon-docx
 qrcode
 Pillow
+scikit-learn
+pandas
