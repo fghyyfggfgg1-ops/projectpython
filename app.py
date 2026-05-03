@@ -98,9 +98,9 @@ if 'is_authenticated' not in st.session_state: st.session_state.is_authenticated
 # الباركود (موجود كما طلبت سابقاً في Sidebar)
 with st.sidebar:
    qr.add_data("https://projectpython-fghyyfggfgg1.streamlit.app")
-    img_io = io.BytesIO()
-    qr.save(img_io, 'PNG')
-    st.image(img_io.getvalue(), caption="باركود الدخول")
+   img_io = io.BytesIO()
+   qr.save(img_io, 'PNG')
+   st.image(img_io.getvalue(), caption="باركود الدخول")
 
 # --- 4. الواجهة الرئيسية ---
 st.markdown(f"<div style='text-align: center;'><h1 style='color: #1E3A8A;'>🎓 المساعد الذكي | Smart Assistant</h1>"
