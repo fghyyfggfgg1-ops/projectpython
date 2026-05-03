@@ -1,3 +1,5 @@
 streamlit
 PYMuPDF
 PYthon-docx
+qrcode
+Pillow
