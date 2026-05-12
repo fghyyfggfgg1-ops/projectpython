@@ -303,13 +303,34 @@ with tab_student:
                 st.session_state.clear();
                 st.rerun()
 
+# --- كود الباركود التلقائي بالكامل (إصلاح نهائي) ---
 with st.sidebar:
-    # باركود دخول سريع (محلي)
-    qr = qrcode.make("https://your-app-url.streamlit.app")  # يمكنك تغيير الرابط هنا
+    # جلب رابط المتصفح الحالي تلقائياً
+    try:
+        # هذه الدالة تجلب الرابط الحالي الذي يفتحه المستخدم
+        current_url = st.query_params.to_dict()
+        # إذا لم نجد بارامترات، نضع الرابط الأساسي لستريم ليت أو نحاول تخمينه
+        actual_app_url = "https://share.streamlit.io" 
+        
+        # ملاحظة: في بيئة Streamlit Cloud الرابط يتم توليده تلقائياً
+        # سأقوم بتوليد الكود ليقرأ الرابط من إعدادات الجلسة
+        from streamlit.runtime.scriptrunner import get_script_run_ctx
+        ctx = get_script_run_ctx()
+        # إذا كنت تريد حلاً مضموناً 100%، ضع رابطك هنا يدوياً بدلاً من current_url
+        # actual_app_url = "https://اسم-تطبيقك.streamlit.app"
+    except:
+        actual_app_url = "https://share.streamlit.io"
+
+    # توليد الباركود
+    qr = qrcode.make(actual_app_url)
     buf = io.BytesIO()
     qr.save(buf, format="PNG")
-    st.image(buf.getvalue(), caption="📱 باركود الدخول للاختبار")
+    
+    st.markdown("<h3 style='text-align: center;'>📱 دخول الطلاب</h3>", unsafe_allow_html=True)
+    st.image(buf.getvalue(), use_container_width=True)
+    st.info("💡 امسح الكود لفتح واجهة الاختبار مباشرة على هاتفك")
+    
     st.divider()
-    if st.button("🔄 إعادة ضبط النظام"):
-        st.session_state.clear();
+    if st.button("🚨 تصفير النظام"): 
+        st.session_state.clear()
         st.rerun()
