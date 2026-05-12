@@ -47,31 +47,44 @@ st.markdown("""
 # --- 2. وظائف النظام الأساسية ---
 
 def save_to_permanent_excel(student_info, exam_details, final_score):
-    """حفظ النتائج بشكل مفصل (كل سؤال في سطر لضمان عدم ضياع أي معلومة)"""
+    """حفظ النتائج في ملف إكسل بشكل دائم"""
     file_path = "permanent_results.xlsx"
-    records = []
+    flat_data = []
     for q in exam_details:
-        records.append({
+        flat_data.append({
             "الاسم": student_info['name'],
             "رقم القيد": student_info['id'],
             "السؤال": q['q_text'],
             "إجابة الطالب": q['student_ans'],
             "الإجابة النموذجية": q['correct_ans'],
-            "درجة السؤال": q['q_score'],
-            "الدرجة النهائية": final_score,
-            "الحالة": "ناجح" if float(final_score.strip('%')) >= 50 else "راسب",
+            "الدرجة": q['q_score'],
+            "النتيجة النهائية": final_score,
             "التاريخ": time.strftime("%Y-%m-%d %H:%M")
         })
-    df_new = pd.DataFrame(records)
-    try:
-        if not os.path.isfile(file_path):
-            df_new.to_excel(file_path, index=False)
-        else:
+    df_new = pd.DataFrame(flat_data)
+    if not os.path.isfile(file_path):
+        df_new.to_excel(file_path, index=False)
+    else:
+        try:
             existing_df = pd.read_excel(file_path)
             pd.concat([existing_df, df_new], ignore_index=True).to_excel(file_path, index=False)
-    except:
-        st.error("⚠️ يرجى إغلاق ملف الإكسل لتتمكن من حفظ النتيجة الجديدة.")
+        except: st.error("يرجى إغلاق ملف الإكسل لتحديث النتائج.")
 
+def reformulate_question(original_text, new_type):
+    """إعادة صياغة السؤال فورياً بناءً على النوع المختار"""
+    clean = re.sub(r'^(ناقش بالتفصيل المفهوم التالي:|اختر الإجابة الصحيحة:|هل تعتبر العبارة صحيحة:|هل العبارة التالية صحيحة:)', '', original_text).strip(" ؟")
+    if new_type == "مقالي": return f"ناقش بالتفصيل المفهوم التالي: {clean}"
+    elif new_type == "صح_خطأ": return f"هل العبارة التالية صحيحة: {clean}؟"
+    elif new_type == "اختياري": return f"اختر الإجابة الصحيحة المتعلقة بـ: {clean}..."
+    return original_text
+
+def calculate_smart_score(student_ans, model_ans):
+    if not student_ans or len(str(student_ans).strip()) < 2: return 0
+    try:
+        vectorizer = TfidfVectorizer(ngram_range=(2, 4), analyzer='char_wb')
+        tfidf = vectorizer.fit_transform([str(student_ans).lower(), str(model_ans).lower()])
+        return round(cosine_similarity(tfidf[0:1], tfidf[1:2])[0][0] * 100)
+    except: return 0
 
 def reformulate_question(original_text, new_type):
     """إعادة صياغة فورية عند تغيير النمط"""
