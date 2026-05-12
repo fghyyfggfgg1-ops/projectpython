@@ -6,3 +6,5 @@ Pillow
 scikit-learn
 pandas
 xlsxwriter
+openpyxl
+xlsxwriter
