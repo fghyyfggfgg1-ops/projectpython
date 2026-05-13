@@ -47,44 +47,55 @@ st.markdown("""
 # --- 2. وظائف النظام الأساسية ---
 
 def save_to_permanent_excel(student_info, exam_details, final_score):
-    """حفظ النتائج في ملف إكسل بشكل دائم"""
     file_path = "permanent_results.xlsx"
-    flat_data = []
-    for q in exam_details:
-        flat_data.append({
-            "الاسم": student_info['name'],
-            "رقم القيد": student_info['id'],
-            "السؤال": q['q_text'],
-            "إجابة الطالب": q['student_ans'],
-            "الإجابة النموذجية": q['correct_ans'],
-            "الدرجة": q['q_score'],
-            "النتيجة النهائية": final_score,
-            "التاريخ": time.strftime("%Y-%m-%d %H:%M")
-        })
-    df_new = pd.DataFrame(flat_data)
-    if not os.path.isfile(file_path):
-        df_new.to_excel(file_path, index=False)
-    else:
+    records = []
+
+    def save_to_permanent_excel(student_info, exam_details, final_score):
+        """حفظ النتائج في ملف إكسل بشكل دائم"""
+        file_path = "permanent_results.xlsx"
+        flat_data = []
+        for q in exam_details:
+            flat_data.append({
+                "الاسم": student_info['name'],
+                "رقم القيد": student_info['id'],
+                "السؤال": q['q_text'],
+                "إجابة الطالب": q['student_ans'],
+                "الإجابة النموذجية": q['correct_ans'],
+                "الدرجة": q['q_score'],
+                "النتيجة النهائية": final_score,
+                "التاريخ": time.strftime("%Y-%m-%d %H:%M")
+            })
+        df_new = pd.DataFrame(flat_data)
+        if not os.path.isfile(file_path):
+            df_new.to_excel(file_path, index=False)
+        else:
+            try:
+                existing_df = pd.read_excel(file_path)
+                pd.concat([existing_df, df_new], ignore_index=True).to_excel(file_path, index=False)
+            except:
+                st.error("يرجى إغلاق ملف الإكسل لتحديث النتائج.")
+
+    def reformulate_question(original_text, new_type):
+        """إعادة صياغة السؤال فورياً بناءً على النوع المختار"""
+        clean = re.sub(
+            r'^(ناقش بالتفصيل المفهوم التالي:|اختر الإجابة الصحيحة:|هل تعتبر العبارة صحيحة:|هل العبارة التالية صحيحة:)',
+            '', original_text).strip(" ؟")
+        if new_type == "مقالي":
+            return f"ناقش بالتفصيل المفهوم التالي: {clean}"
+        elif new_type == "صح_خطأ":
+            return f"هل العبارة التالية صحيحة: {clean}؟"
+        elif new_type == "اختياري":
+            return f"اختر الإجابة الصحيحة المتعلقة بـ: {clean}..."
+        return original_text
+
+    def calculate_smart_score(student_ans, model_ans):
+        if not student_ans or len(str(student_ans).strip()) < 2: return 0
         try:
-            existing_df = pd.read_excel(file_path)
-            pd.concat([existing_df, df_new], ignore_index=True).to_excel(file_path, index=False)
-        except: st.error("يرجى إغلاق ملف الإكسل لتحديث النتائج.")
-
-def reformulate_question(original_text, new_type):
-    """إعادة صياغة السؤال فورياً بناءً على النوع المختار"""
-    clean = re.sub(r'^(ناقش بالتفصيل المفهوم التالي:|اختر الإجابة الصحيحة:|هل تعتبر العبارة صحيحة:|هل العبارة التالية صحيحة:)', '', original_text).strip(" ؟")
-    if new_type == "مقالي": return f"ناقش بالتفصيل المفهوم التالي: {clean}"
-    elif new_type == "صح_خطأ": return f"هل العبارة التالية صحيحة: {clean}؟"
-    elif new_type == "اختياري": return f"اختر الإجابة الصحيحة المتعلقة بـ: {clean}..."
-    return original_text
-
-def calculate_smart_score(student_ans, model_ans):
-    if not student_ans or len(str(student_ans).strip()) < 2: return 0
-    try:
-        vectorizer = TfidfVectorizer(ngram_range=(2, 4), analyzer='char_wb')
-        tfidf = vectorizer.fit_transform([str(student_ans).lower(), str(model_ans).lower()])
-        return round(cosine_similarity(tfidf[0:1], tfidf[1:2])[0][0] * 100)
-    except: return 0
+            vectorizer = TfidfVectorizer(ngram_range=(2, 4), analyzer='char_wb')
+            tfidf = vectorizer.fit_transform([str(student_ans).lower(), str(model_ans).lower()])
+            return round(cosine_similarity(tfidf[0:1], tfidf[1:2])[0][0] * 100)
+        except:
+            return 0
 
 def reformulate_question(original_text, new_type):
     """إعادة صياغة فورية عند تغيير النمط"""
@@ -302,35 +313,13 @@ with tab_student:
             if st.button("خروج وإنهاء الجلسة"):
                 st.session_state.clear();
                 st.rerun()
-
-# --- كود الباركود التلقائي بالكامل (إصلاح نهائي) ---
+# الباركود (موجود كما طلبت سابقاً في Sidebar)
 with st.sidebar:
-    # جلب رابط المتصفح الحالي تلقائياً
-    try:
-        # هذه الدالة تجلب الرابط الحالي الذي يفتحه المستخدم
-        current_url = st.query_params.to_dict()
-        # إذا لم نجد بارامترات، نضع الرابط الأساسي لستريم ليت أو نحاول تخمينه
-        actual_app_url = "https://share.streamlit.io" 
-        
-        # ملاحظة: في بيئة Streamlit Cloud الرابط يتم توليده تلقائياً
-        # سأقوم بتوليد الكود ليقرأ الرابط من إعدادات الجلسة
-        from streamlit.runtime.scriptrunner import get_script_run_ctx
-        ctx = get_script_run_ctx()
-        # إذا كنت تريد حلاً مضموناً 100%، ضع رابطك هنا يدوياً بدلاً من current_url
-        # actual_app_url = "https://اسم-تطبيقك.streamlit.app"
-    except:
-        actual_app_url = "https://share.streamlit.io"
-
-    # توليد الباركود
-    qr = qrcode.make(actual_app_url)
-    buf = io.BytesIO()
-    qr.save(buf, format="PNG")
-    
-    st.markdown("<h3 style='text-align: center;'>📱 دخول الطلاب</h3>", unsafe_allow_html=True)
-    st.image(buf.getvalue(), use_container_width=True)
-    st.info("💡 امسح الكود لفتح واجهة الاختبار مباشرة على هاتفك")
-    
+    qr = qrcode.make("https://projectpython-djr6lbvhyrrwhbzuhk339w.streamlit.app/")
+    img_io = io.BytesIO()
+    qr.save(img_io, 'PNG')
+    st.image(img_io.getvalue(), caption="باركود الدخول")
     st.divider()
-    if st.button("🚨 تصفير النظام"): 
+    if st.button("🚨 تصفير النظام"):
         st.session_state.clear()
         st.rerun()
