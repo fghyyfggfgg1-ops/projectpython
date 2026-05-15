@@ -26,10 +26,6 @@ st.markdown("""
         direction: rtl !important;
         text-align: right !important;
     }
-    .timer-badge {
-        background-color: #e11d48; color: white; padding: 12px; border-radius: 10px;
-        font-size: 20px; font-weight: bold; text-align: center; margin-bottom: 20px;
-    }
     .question-card {
         background-color: #f8fafc; border: 1px solid #cbd5e1; border-radius: 12px;
         padding: 25px; margin-bottom: 20px; border-right: 8px solid #1e3a8a;
@@ -38,70 +34,37 @@ st.markdown("""
         border-radius: 10px; background-color: #1E3A8A !important; color: white !important;
         width: 100%; height: 45px; font-weight: bold;
     }
-    .correct-box { background-color: #dcfce7; padding: 10px; border-radius: 5px; border-right: 5px solid #16a34a; margin-top: 5px; }
-    .wrong-box { background-color: #fee2e2; padding: 10px; border-radius: 5px; border-right: 5px solid #dc2626; margin-top: 5px; }
     </style>
     """, unsafe_allow_html=True)
-
 
 # --- 2. وظائف النظام الأساسية ---
 
 def save_to_permanent_excel(student_info, exam_details, final_score):
     file_path = "permanent_results.xlsx"
-    records = []
-
-    def save_to_permanent_excel(student_info, exam_details, final_score):
-        """حفظ النتائج في ملف إكسل بشكل دائم"""
-        file_path = "permanent_results.xlsx"
-        flat_data = []
-        for q in exam_details:
-            flat_data.append({
-                "الاسم": student_info['name'],
-                "رقم القيد": student_info['id'],
-                "السؤال": q['q_text'],
-                "إجابة الطالب": q['student_ans'],
-                "الإجابة النموذجية": q['correct_ans'],
-                "الدرجة": q['q_score'],
-                "النتيجة النهائية": final_score,
-                "التاريخ": time.strftime("%Y-%m-%d %H:%M")
-            })
-        df_new = pd.DataFrame(flat_data)
+    flat_data = []
+    for q in exam_details:
+        flat_data.append({
+            "الاسم": student_info['name'],
+            "رقم القيد": student_info['id'],
+            "السؤال": q['q_text'],
+            "إجابة الطالب": q['student_ans'],
+            "الإجابة النموذجية": q['correct_ans'],
+            "الدرجة": q['q_score'],
+            "النتيجة النهائية": final_score,
+            "التاريخ": time.strftime("%Y-%m-%d %H:%M")
+        })
+    df_new = pd.DataFrame(flat_data)
+    try:
         if not os.path.isfile(file_path):
             df_new.to_excel(file_path, index=False)
         else:
-            try:
-                existing_df = pd.read_excel(file_path)
-                pd.concat([existing_df, df_new], ignore_index=True).to_excel(file_path, index=False)
-            except:
-                st.error("يرجى إغلاق ملف الإكسل لتحديث النتائج.")
-
-    def reformulate_question(original_text, new_type):
-        """إعادة صياغة السؤال فورياً بناءً على النوع المختار"""
-        clean = re.sub(
-            r'^(ناقش بالتفصيل المفهوم التالي:|اختر الإجابة الصحيحة:|هل تعتبر العبارة صحيحة:|هل العبارة التالية صحيحة:)',
-            '', original_text).strip(" ؟")
-        if new_type == "مقالي":
-            return f"ناقش بالتفصيل المفهوم التالي: {clean}"
-        elif new_type == "صح_خطأ":
-            return f"هل العبارة التالية صحيحة: {clean}؟"
-        elif new_type == "اختياري":
-            return f"اختر الإجابة الصحيحة المتعلقة بـ: {clean}..."
-        return original_text
-
-    def calculate_smart_score(student_ans, model_ans):
-        if not student_ans or len(str(student_ans).strip()) < 2: return 0
-        try:
-            vectorizer = TfidfVectorizer(ngram_range=(2, 4), analyzer='char_wb')
-            tfidf = vectorizer.fit_transform([str(student_ans).lower(), str(model_ans).lower()])
-            return round(cosine_similarity(tfidf[0:1], tfidf[1:2])[0][0] * 100)
-        except:
-            return 0
+            existing_df = pd.read_excel(file_path)
+            pd.concat([existing_df, df_new], ignore_index=True).to_excel(file_path, index=False)
+    except:
+        st.error("يرجى إغلاق ملف الإكسل لتحديث النتائج.")
 
 def reformulate_question(original_text, new_type):
-    """إعادة صياغة فورية عند تغيير النمط"""
-    clean = re.sub(
-        r'^(ناقش بالتفصيل المفهوم التالي:|اختر الإجابة الصحيحة:|هل تعتبر العبارة صحيحة:|هل العبارة التالية صحيحة:)', '',
-        original_text).strip(" ؟")
+    clean = re.sub(r'^(ناقش بالتفصيل المفهوم التالي:|اختر الإجابة الصحيحة:|هل تعتبر العبارة صحيحة:|هل العبارة التالية صحيحة:)', '', original_text).strip(" ؟")
     if new_type == "مقالي":
         return f"ناقش بالتفصيل المفهوم التالي: {clean}"
     elif new_type == "صح_خطأ":
@@ -110,16 +73,17 @@ def reformulate_question(original_text, new_type):
         return f"اختر الإجابة الصحيحة المتعلقة بـ: {clean}..."
     return original_text
 
-
 def calculate_smart_score(student_ans, model_ans):
-    if not student_ans or len(str(student_ans).strip()) < 2: return 0
+    if not student_ans or len(str(student_ans).strip()) < 2: 
+        return 0
     try:
         vectorizer = TfidfVectorizer(ngram_range=(2, 4), analyzer='char_wb')
         tfidf = vectorizer.fit_transform([str(student_ans).lower(), str(model_ans).lower()])
-        return round(cosine_similarity(tfidf[0:1], tfidf[1:2])[0][0] * 100)
+        similarity = cosine_similarity(tfidf[0:1], tfidf[1:2])[0][0]
+        final_score = round(similarity * 100)
+        return final_score if final_score >= 40 else 0
     except:
         return 0
-
 
 def extract_smart_text(file):
     text_data, full_text_raw = [], ""
@@ -141,43 +105,47 @@ def extract_smart_text(file):
             text_data.append({"text": p.text.strip(), "is_heading": any(run.bold for run in p.runs)})
     return text_data, full_text_raw
 
-
 def generate_smart_exam(data, full_text, difficulty, default_time):
-    qa_pairs = []
-    headings = [item['text'] for item in data if item['is_heading'] and len(item['text']) > 10]
-    sentences = [s.strip() for s in re.split(r'[.\n!؟]', full_text) if len(s.strip()) > 40]
-    limit = {"سهل": 8, "متوسط": 12, "عالي": 18}.get(difficulty, 10)
+    extracted = []
+    if difficulty == "سهل":
+        min_len, max_len = 30, 100
+    elif difficulty == "متوسط":
+        min_len, max_len = 101, 250
+    else:
+        min_len, max_len = 251, 600
 
-    random.shuffle(headings)
-    for h in headings[:limit // 2]:
-        qa_pairs.append(
-            {"q": f"ناقش بالتفصيل المفهوم التالي: {h}", "a": h, "type": "مقالي", "time": default_time, "options": []})
+    sentences = [s.strip() for s in re.split(r'[.\n]', full_text) if min_len < len(s.strip()) < max_len]
+    logic_keys = ["هو", "هي", "يعتبر", "تعتبر", "يتكون", "يتميز", "يهدف"]
 
-    random.shuffle(sentences)
-    for s in sentences[:limit // 2]:
-        q_type = random.choice(["صح_خطأ", "اختياري"])
-        if q_type == "اختياري":
-            qa_pairs.append(
-                {"q": f"اختر الإجابة الصحيحة المتعلقة بـ: {s[:50]}...", "a": s, "type": "اختياري", "time": default_time,
-                 "options": [s, "خيار بديل 1", "خيار بديل 2"]})
-        else:
-            qa_pairs.append(
-                {"q": f"هل العبارة التالية صحيحة: {s[:100]}؟", "a": "صح", "type": "صح_خطأ", "time": default_time,
-                 "options": ["صح", "خطأ"]})
-    return qa_pairs
+    for s in sentences:
+        found_key = next((k for k in logic_keys if f" {k} " in s), None)
+        if found_key or ":" in s:
+            parts = s.split(":", 1) if ":" in s else s.split(found_key, 1)
+            subj, content = parts[0].strip(), parts[1].strip()
+            q_type = random.choice(["صح_خطأ", "اختياري", "مقالي"])
 
+            if q_type == "صح_خطأ":
+                extracted.append({"q": f"هل صحيح أن {subj} {found_key if found_key else ''} {content}؟", "a": "صح", "type": "صح_خطأ", "time": default_time, "options": ["صح", "خطأ"]})
+            elif q_type == "اختياري":
+                opts = [content, "خيار بديل 1", "خيار بديل 2"]; random.shuffle(opts)
+                extracted.append({"q": f"حدد المفهوم الصحيح لـ ({subj})؟", "a": content, "type": "اختياري", "time": default_time, "options": opts})
+            else:
+                extracted.append({"q": f"بناءً على المنهج، اشرح بالتفصيل مفهوم: {subj}", "a": content, "type": "مقالي", "time": default_time, "options": []})
+    return extracted
 
-# --- 3. إدارة الجلسة ---
-for key in ['qa_pairs', 'exam_active', 'is_authenticated', 'student_step', 'st_ans_list', 'curr', 'q_start',
-            'final_score_str']:
-    if key not in st.session_state:
-        st.session_state[key] = [] if 'list' in key or 'qa' in key else (
-            False if 'active' in key or 'auth' in key else (0 if key == 'curr' else 'login'))
+# --- 3. إدارة الجلسة (توحيد المتغيرات) ---
+if 'qa_pairs' not in st.session_state: st.session_state.qa_pairs = []
+if 'exam_active' not in st.session_state: st.session_state.exam_active = False
+if 'is_authenticated' not in st.session_state: st.session_state.is_authenticated = False
+if 'step' not in st.session_state: st.session_state.step = 'teacher_setup'
+if 'st_info' not in st.session_state: st.session_state.st_info = {}
+if 'st_ans_list' not in st.session_state: st.session_state.st_ans_list = []
+if 'curr' not in st.session_state: st.session_state.curr = 0
+if 'q_start' not in st.session_state: st.session_state.q_start = 0
+if 'final_score_str' not in st.session_state: st.session_state.final_score_str = ""
 
 # --- 4. الواجهة الرئيسية ---
-st.markdown(f"<div style='text-align: center;'><h1 style='color: #1E3A8A;'>🎓 المساعد الذكي | Smart Assistant</h1>"
-            f"<h3 style='color: #1E3A8A;'>الجامعة الأسمرية | كلية التربية - قسم الحاسوب</h3></div>",
-            unsafe_allow_html=True)
+st.markdown(f"<div style='text-align: center;'><h1 style='color: #1E3A8A;'>🎓 المساعد الذكي | Smart Assistant</h1><h3 style='color: #1E3A8A;'>الجامعة الأسمرية | كلية التربية - قسم الحاسوب</h3></div>", unsafe_allow_html=True)
 
 tab_teacher, tab_student = st.tabs(["👨‍🏫 بوابة المعلم", "👨‍🎓 بوابة الطالب"])
 
@@ -188,11 +156,9 @@ with tab_teacher:
             if st.form_submit_button("دخول"):
                 if pwd == "admin":
                     st.session_state.is_authenticated = True; st.rerun()
-                else:
-                    st.error("❌ كلمة المرور خاطئة")
+                else: st.error("❌ كلمة المرور خاطئة")
     else:
         menu = st.radio("القائمة:", ["إعداد الاختبار", "النتائج والتقارير"], horizontal=True)
-
         if menu == "إعداد الاختبار":
             file = st.file_uploader("ارفع المنهج الدراسي (PDF/DOCX)", type=['pdf', 'docx'])
             col1, col2 = st.columns(2)
@@ -203,123 +169,78 @@ with tab_teacher:
                 if file:
                     data, full_text = extract_smart_text(file)
                     st.session_state.qa_pairs = generate_smart_exam(data, full_text, diff, d_time)
-                    st.rerun()
+                    st.session_state.step = 'teacher_review'; st.rerun()
 
-            if st.session_state.qa_pairs:
+            if st.session_state.step == 'teacher_review' and st.session_state.qa_pairs:
                 for i, q in enumerate(st.session_state.qa_pairs):
                     with st.expander(f"📝 تعديل سؤال {i + 1} ({q['type']})"):
                         c1, c2, c3 = st.columns([2, 2, 1])
                         with c1:
-                            new_type = st.selectbox(f"النمط {i}", ["مقالي", "صح_خطأ", "اختياري"],
-                                                    index=["مقالي", "صح_خطأ", "اختياري"].index(q['type']),
-                                                    key=f"ty_{i}")
-                            if new_type != q['type']:
-                                q['type'] = new_type
-                                q['q'] = reformulate_question(q['q'], new_type)
-                                if new_type == "صح_خطأ":
-                                    q['options'] = ["صح", "خطأ"]; q['a'] = "صح"
-                                elif new_type == "اختياري":
-                                    q['options'] = [q['a'], "خيار بديل 1", "خيار بديل 2"]
-                                st.rerun()
-                        with c2:
-                            q['time'] = st.number_input(f"زمن السؤال {i}", value=q['time'], key=f"tm_{i}")
+                            new_ty = st.selectbox(f"النمط {i}", ["مقالي", "صح_خطأ", "اختياري"], index=["مقالي", "صح_خطأ", "اختياري"].index(q['type']), key=f"ty_{i}")
+                            if new_ty != q['type']:
+                                q['type'] = new_ty; q['q'] = reformulate_question(q['q'], new_ty); st.rerun()
+                        with c2: q['time'] = st.number_input(f"زمن {i}", value=q['time'], key=f"tm_{i}")
                         with c3:
-                            if st.button(f"🗑️ حذف السؤل {i + 1}", key=f"del_{i}"):
-                                st.session_state.qa_pairs.pop(i);
-                                st.rerun()
+                            if st.button(f"🗑️ حذف {i+1}", key=f"del_{i}"): st.session_state.qa_pairs.pop(i); st.rerun()
+                        q['q'] = st.text_input(f"السؤال {i+1}", q['q'], key=f"qi_{i}")
+                        q['a'] = st.text_area(f"الإجابة {i+1}", q['a'], key=f"ai_{i}")
 
-                        q['q'] = st.text_input(f"السؤال {i + 1}:", q['q'], key=f"q_in_{i}")
-                        q['a'] = st.text_area(f"الإجابة النموذجية:", q['a'], key=f"a_in_{i}")
-
-                        if q['type'] == "اختياري":
-                            q['options'][0] = st.text_input(f"الخيار الصحيح {i}", q['options'][0], key=f"opt_c_{i}")
-                            q['options'][1] = st.text_input(f"بديل 1 {i}", q['options'][1], key=f"opt_1_{i}")
-                            q['options'][2] = st.text_input(f"بديل 2 {i}", q['options'][2], key=f"opt_2_{i}")
-
-                if st.button("🚀 تفعيل الاختبار للطلاب", use_container_width=True):
-                    st.session_state.exam_active = True
-                    st.balloons();
-                    st.success("🚀 تم تفعيل الاختبار بنجاح!")
+                if st.button("🚀 تفعيل الاختبار للطلاب"):
+                    st.session_state.exam_active = True; st.balloons(); st.success("تم التفعيل!")
 
         elif menu == "النتائج والتقارير":
             if os.path.exists("permanent_results.xlsx"):
                 df = pd.read_excel("permanent_results.xlsx")
-                st.subheader("📊 جميع نتائج الطلاب المسجلة")
                 st.dataframe(df, use_container_width=True)
                 with open("permanent_results.xlsx", "rb") as f:
-                    st.download_button("📥 تحميل سجل النتائج (Excel)", f, "results.xlsx", use_container_width=True)
-            else:
-                st.info("ℹ️ لا توجد نتائج مسجلة في ملف الإكسل بعد.")
+                    st.download_button("📥 تحميل Excel", f, "results.xlsx")
+            else: st.info("لا توجد نتائج بعد.")
 
 with tab_student:
     if not st.session_state.exam_active:
-        st.warning("🕒 الاختبار غير متاح حالياً. يرجى الانتظار لتفعيله من قبل المعلم.")
+        st.warning("🕒 الاختبار غير متاح حالياً.")
     else:
-        if st.session_state.student_step == 'login':
+        if st.session_state.step in ['teacher_review', 'teacher_setup', 'student_login']:
             st.markdown("<div class='question-card'>", unsafe_allow_html=True)
-            name = st.text_input("الاسم الثلاثي للطالب")
-            id_st = st.text_input("رقم القيد الجامعي")
+            name = st.text_input("الاسم الثلاثي")
+            id_st = st.text_input("رقم القيد")
             if st.button("بدء الاختبار 🏁") and name and id_st:
-                st.session_state.update(
-                    {"st_info": {"name": name, "id": id_st}, "st_ans_list": [], "curr": 0, "q_start": time.time(),
-                     "student_step": 'exam'})
+                st.session_state.update({"st_info": {"name": name, "id": id_st}, "st_ans_list": [], "curr": 0, "q_start": time.time(), "step": 'student_exam'})
                 st.rerun()
             st.markdown("</div>", unsafe_allow_html=True)
 
-        elif st.session_state.student_step == 'exam':
+        elif st.session_state.step == 'student_exam':
             idx = st.session_state.curr
-            q = st.session_state.qa_pairs[idx]
-            rem = max(0, int(q['time'] - (time.time() - st.session_state.q_start)))
+            item = st.session_state.qa_pairs[idx]
+            rem = max(0, int(item['time'] - (time.time() - st.session_state.q_start)))
 
-            st.markdown(f"<div class='timer-badge'>⏳ المتبقي: {rem} ثانية</div>", unsafe_allow_html=True)
-            st.markdown(f"<div class='question-card'><h3>سؤال {idx + 1}:</h3><p>{q['q']}</p></div>",
-                        unsafe_allow_html=True)
+            st.markdown(f"<div style='text-align:center; padding:10px; background-color:#fff3cd; border-radius:10px;'>⏳ المتبقي: {rem}ث</div>", unsafe_allow_html=True)
+            st.markdown(f"<div class='question-card'><h3>سؤال {idx + 1}</h3><p>{item['q']}</p></div>", unsafe_allow_html=True)
 
-            if q['type'] == "مقالي":
-                ans = st.text_area("أدخل إجابتك هنا:", key=f"st_ans_{idx}", height=150)
-            else:
-                ans = st.radio("اختر الإجابة:", q['options'], index=None, key=f"st_ans_{idx}")
+            if item['type'] == "صح_خطأ": ans = st.radio("الإجابة:", ["صح", "خطأ"], key=f"ans_{idx}", index=None)
+            elif item['type'] == "اختياري": ans = st.radio("الإجابة:", item['options'], key=f"ans_{idx}", index=None)
+            else: ans = st.text_area("إجابتك:", key=f"ans_{idx}")
 
-            if st.button("إرسال الإجابة والانتقال ⬅️") or rem == 0:
-                sc = calculate_smart_score(ans, q['a']) if q['type'] == "مقالي" else (100 if ans == q['a'] else 0)
-                st.session_state.st_ans_list.append(
-                    {"q_text": q['q'], "student_ans": ans, "correct_ans": q['a'], "q_score": sc})
-
+            if st.button("التالي ⬅️" if idx < len(st.session_state.qa_pairs)-1 else "🚀 تسليم") or rem == 0:
+                sc = calculate_smart_score(ans, item['a']) if item['type'] == "مقالي" else (100 if ans == item['a'] else 0)
+                st.session_state.st_ans_list.append({"q_text": item['q'], "student_ans": ans, "correct_ans": item['a'], "q_score": sc})
+                
                 if idx < len(st.session_state.qa_pairs) - 1:
-                    st.session_state.curr += 1;
-                    st.session_state.q_start = time.time();
-                    st.rerun()
+                    st.session_state.curr += 1; st.session_state.q_start = time.time(); st.rerun()
                 else:
-                    total_scores = [x['q_score'] for x in st.session_state.st_ans_list]
-                    avg = sum(total_scores) / len(st.session_state.qa_pairs)
-                    f_score_str = f"{avg:.1f}%"
-                    save_to_permanent_excel(st.session_state.st_info, st.session_state.st_ans_list, f_score_str)
-                    st.session_state.update({"final_score_str": f_score_str, "student_step": 'result'})
-                    st.rerun()
+                    avg = sum([x['q_score'] for x in st.session_state.st_ans_list]) / len(st.session_state.qa_pairs)
+                    st.session_state.final_score_str = f"{avg:.1f}%"
+                    save_to_permanent_excel(st.session_state.st_info, st.session_state.st_ans_list, st.session_state.final_score_str)
+                    st.session_state.step = 'student_result'; st.rerun()
+            
             if rem > 0: time.sleep(1); st.rerun()
 
-        elif st.session_state.student_step == 'result':
-            st.balloons()
-            st.success(f"🎊 انتهى الاختبار يا {st.session_state.st_info['name']}")
-            st.metric("درجتك النهائية هي:", st.session_state.final_score_str)
+        elif st.session_state.step == 'student_result':
+            st.success(f"✅ تم الانتهاء! درجتك: {st.session_state.final_score_str}")
+            if st.button("خروج"): st.session_state.clear(); st.rerun()
 
-            for item in st.session_state.st_ans_list:
-                with st.container():
-                    is_correct = item['q_score'] >= 60
-                    st.markdown(f"<div class='question-card'><b>السؤال:</b> {item['q_text']}<br>"
-                                f"<div class='{'correct-box' if is_correct else 'wrong-box'}'><b>إجابتك:</b> {item['student_ans']}<br>"
-                                f"<b>الإجابة الصحيحة:</b> {item['correct_ans']}</div></div>", unsafe_allow_html=True)
-
-            if st.button("خروج وإنهاء الجلسة"):
-                st.session_state.clear();
-                st.rerun()
-# الباركود (موجود كما طلبت سابقاً في Sidebar)
 with st.sidebar:
     qr = qrcode.make("https://projectpython-djr6lbvhyrrwhbzuhk339w.streamlit.app/")
-    img_io = io.BytesIO()
-    qr.save(img_io, 'PNG')
+    img_io = io.BytesIO(); qr.save(img_io, 'PNG')
     st.image(img_io.getvalue(), caption="باركود الدخول")
-    st.divider()
-    if st.button("🚨 تصفير النظام"):
-        st.session_state.clear()
-        st.rerun()
+    if st.button("🚨 تصفير النظام"): st.session_state.clear(); st.rerun()
