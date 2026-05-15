@@ -67,12 +67,20 @@ def calculate_smart_score(student_ans, model_ans):
 
 def get_file_details(file):
     text = ""
+    # تأكد من إعادة المؤشر للبداية قبل أي عملية قراءة
+    file.seek(0) 
+    
     if file.name.endswith('.pdf'):
-        with fitz.open(stream=file.read(), filetype="pdf") as doc:
-            for page in doc: text += page.get_text() + " "
+        # قراءة المحتوى مرة واحدة وتخزينه في متغير
+        file_data = file.read()
+        with fitz.open(stream=file_data, filetype="pdf") as doc:
+            for page in doc:
+                text += page.get_text() + " "
     else:
+        # بالنسبة لملفات Word
         doc = Document(file)
         text = "\n".join([p.text for p in doc.paragraphs])
+        
     return text
 
 
