@@ -156,7 +156,7 @@ def extract_smart_text(file):
 def generate_smart_exam(data, full_text, difficulty, default_time):
     text = full_text # أضف هذا السطر ليتوافق الكود الجديد مع متغيراتك القديمة
     extracted = []
-      if difficulty == "سهل":
+    if difficulty == "سهل":
         min_len, max_len = 30, 100  # جمل بسيطة ومباشرة
         default_time = 60  # زمن مقترح أولي
     elif difficulty == "متوسط":
