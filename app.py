@@ -137,8 +137,6 @@ def smart_question_engine(text, difficulty):
                 })
 
     return extracted
-
-
 if 'current_q_idx' not in st.session_state: st.session_state.current_q_idx = 0
 if 'qa_pairs' not in st.session_state: st.session_state.qa_pairs = []
 
@@ -151,7 +149,7 @@ with st.sidebar:
     st.markdown("##### 📱 كود الدخول للاختبار:")
 
     # توليد الباركود مباشرة (بدون الحاجة لدالة خارجية)
-    qr_url = "https://edu-ai-asmarya.streamlit.app"
+    qr_url = "https://projectpython-djr6lbvhyrrwhbzuhk339w.streamlit.app/"
     qr = qrcode.make(qr_url)
     buf_qr = io.BytesIO()
     qr.save(buf_qr, format="PNG")
@@ -169,8 +167,7 @@ with st.sidebar:
 
 # --- 6. الواجهة الرئيسية ---
 st.markdown("<div style='text-align: center;'><h1 style='color: #1E3A8A;'>🎓 نظام مساعد التقييم الذكي</h1>"
-            "<h3 style='color: #1E3A8A;'>الجامعة الأسمرية | كلية التربية - قسم الحاسوب</h3></div>",
-            unsafe_allow_html=True)
+            "<h3 style='color: #1E3A8A;'>الجامعة الأسمرية | كلية التربية - قسم الحاسوب</h3></div>", unsafe_allow_html=True)
 st.divider()
 
 # المرحلة 1: الرفع + تحديد المستوى (Dropdown كما في الصورة)
@@ -367,6 +364,7 @@ elif st.session_state.step == 'export':
             mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
             use_container_width=True
         )
+        
 
     with col_main:
         if st.button("🏠 العودة للرئيسية", use_container_width=True):
