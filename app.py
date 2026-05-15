@@ -87,10 +87,9 @@ def save_to_permanent_excel(student_info, exam_details, final_score):
         elif new_type == "اختياري":
             return f"اختر الإجابة الصحيحة المتعلقة بـ: {clean}..."
         return original_text
-
- def calculate_smart_score(student_ans, model_ans):
-    if not student_ans or len(str(student_ans).strip()) < 2: 
-        return 0
+        def calculate_smart_score(student_ans, model_ans):
+            if not student_ans or len(str(student_ans).strip()) < 2: 
+                return 0
     try:
         # إعداد المحول الرقمي
         vectorizer = TfidfVectorizer(ngram_range=(2, 4), analyzer='char_wb')
